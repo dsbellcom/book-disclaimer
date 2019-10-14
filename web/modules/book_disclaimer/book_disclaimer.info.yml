@@ -1,0 +1,6 @@
+name: Book with disclaimer
+description: The module allows you to create books with disclaimers.
+package: BookTest
+type: module
+version: 1.0
+core: 8.x

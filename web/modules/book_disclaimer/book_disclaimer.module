@@ -1,0 +1,65 @@
+<?php
+
+include_once \Drupal::root() . '/core/themes/engines/twig/twig.engine';
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Cookie;
+use \Drupal\Core\Url;
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for node entities.
+ *
+ * Add a disclaimer to a 'book' node.
+ *
+ * @param array $build
+ * @param EntityInterface $entity
+ * @param EntityViewDisplayInterface $display
+ * @param type $view_mode
+ * @return type
+ */
+function book_disclaimer_node_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  // Disclaimer is shown only when node of type 'book' is shown as full view.
+  if ('book' === $entity->getType() && 'full' === $view_mode) {
+    if (is_null($entity->get('field_disclaimer')->first())) {
+      // This book has no disclaimer. Nothing to do.
+      return;
+    }
+    $accepted_disclaimers_arr = array();
+    if (isset($_COOKIE['accepted_disclaimers'])) {
+      $accepted_disclaimers_arr = unserialize($_COOKIE['accepted_disclaimers']);
+    }
+
+    if (!in_array($entity->id(), $accepted_disclaimers_arr)) {
+      // This book disclaimer has not been accepted yet. Need to show disclaimer instead of book.
+      $disclaimer_id = $entity->get('field_disclaimer')->first()->getValue()['target_id'];
+      $entity_type = 'node';
+      $disclaimer = \Drupal::entityTypeManager()->getStorage($entity_type)->load($disclaimer_id);
+
+      $reject_url = Url::fromRoute('view.bookpage.books');
+      $reject_url = $reject_url->toString();
+
+      $accepted_disclaimers_arr[] = $entity->id();
+      // Get the disclaimer render with custom twig template.
+      $output = twig_render_template(drupal_get_path('module', 'book_disclaimer') . '/templates/book-disclaimer.html.twig', array(
+          'disclaimer_text' => $disclaimer->get('body')->value,
+          'disclaimer_id' => $disclaimer->id(),
+          'reject_url' => $reject_url,
+          'accepted_disclaimers' => serialize($accepted_disclaimers_arr),
+          // Needed to prevent notices when Twig debugging is enabled.
+          'theme_hook_original' => 'not-applicable',
+      ));
+
+      $attached = array('library' => array('book_disclaimer/book-disclaimer'));
+      // Show disclaimer instead of book.
+      $build = array(
+          '#type' => 'markup',
+          '#markup' => $output,
+          '#entity_type' => 'node',
+          '#node' => $disclaimer,
+          '#attached' => $attached,
+      );
+    }
+  }
+}

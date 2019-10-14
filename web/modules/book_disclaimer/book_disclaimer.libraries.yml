@@ -1,0 +1,6 @@
+book-disclaimer:
+  version: 1.x
+  js:
+    js/book-disclaimer.js: {}
+  dependencies:
+    - core/jquery

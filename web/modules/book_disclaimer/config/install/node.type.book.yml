@@ -1,0 +1,19 @@
+status: true
+dependencies:
+  enforced:
+    module:
+      - book_disclaimer
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
+name: Book
+type: book
+description: 'Book node'
+help: ''
+new_revision: true
+preview_mode: 1
+display_submitted: true
